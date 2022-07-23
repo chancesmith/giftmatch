@@ -13,6 +13,7 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import React from "react";
 import { BrowserRouter, NavLink, Route, Routes, Link } from "react-router-dom";
+import { Create } from "./Create";
 import { Home } from "./Home";
 
 interface Props {
@@ -110,12 +111,6 @@ function App(props: Props) {
               </Box>
             </Toolbar>
           </AppBar>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/matches" element={<Home />} />
-            <Route path="/create" element={<Home />} />
-            <Route path="/matches/:id" element={<Home />} />
-          </Routes>
         </Box>
         <Box component="nav">
           <Drawer
@@ -136,6 +131,14 @@ function App(props: Props) {
           >
             {drawer}
           </Drawer>
+        </Box>
+        <Box component="main" sx={{ p: 3 }}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/create" element={<Create />} />
+            <Route path="/matches" element={<Home />} />
+            <Route path="/matches/:id" element={<Home />} />
+          </Routes>
         </Box>
       </div>
     </BrowserRouter>
