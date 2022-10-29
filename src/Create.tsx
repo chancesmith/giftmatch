@@ -14,21 +14,29 @@ interface Match {
   updatedAt: string;
 }
 
+const defaultMatch: Match = {
+  id: new Date().toISOString(),
+  title: "",
+  names: [],
+  matches: [],
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
+const defaultSelectedList = "brand-new-list";
+
 export const Create = () => {
   const [newName, setNewName] = React.useState<string>("");
-  const [list, setList] = React.useState<Match>({
-    id: new Date().toISOString(),
-    title: "",
-    names: [],
-    matches: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
+  const [list, setList] = React.useState<Match>(defaultMatch);
+  const [selectedHistoryList, setSelectedHistoryList] =
+    React.useState(defaultSelectedList);
+  let matchHistory = getMatchesHistory();
 
   const handleNewName = (event: React.ChangeEvent<HTMLInputElement>) => {
     const name = event.target.value;
     setNewName(name);
   };
+
   const handleNewTitle = (event: React.ChangeEvent<HTMLInputElement>) => {
     const title = event.target.value;
     setList({
@@ -40,6 +48,7 @@ export const Create = () => {
   const makeMatches = (names: string[]) => {
     // shuffle names
     const shuffled = [...names].sort(() => Math.random() - 0.5);
+    console.log({ names, shuffled });
 
     // make matches by shifting names by 1
     const namesToShift = [...shuffled];
@@ -72,10 +81,16 @@ export const Create = () => {
     };
 
     setList(newMatch);
+    setSelectedHistoryList(newMatch.title);
     setNewName("");
 
+    matchHistory = getMatchesHistory();
+
     // update match history
-    const newMatchesHistory = [...getMatchesHistory(), newMatch];
+    const newMatchesHistory = {
+      ...matchHistory,
+      [newMatch.title]: newMatch,
+    };
     updateMatchesHistory(newMatchesHistory);
   };
 
@@ -91,13 +106,34 @@ export const Create = () => {
   };
 
   const handleMatchSelect = (match: Match) => {
+    setSelectedHistoryList(match.title);
     setList(match);
+  };
+
+  const handleShuffle = () => {
+    const shuffled = makeMatches(list.names.sort());
+
+    setList({ ...list, matches: shuffled });
+  };
+
+  const handleNewList = () => {
+    setList(defaultMatch);
+    setSelectedHistoryList("brand-new-list");
   };
 
   return (
     <Box sx={{ pt: 8 }}>
-      <Typography variant="h1">Create Exchange List</Typography>
-      <Box sx={{ pt: 4, display: "flex" }}>
+      <Typography variant="h3" component="h1">
+        Create Gift Exchange List
+      </Typography>
+
+      {list.title !== "" && list.names.length > 0 ? (
+        <Button variant="contained" onClick={handleNewList}>
+          Start A New List
+        </Button>
+      ) : null}
+
+      <Box sx={{ pt: 1, display: "flex" }}>
         <Box sx={{ pr: 4, pt: 4, flex: 1 }}>
           <form onSubmit={handleAddName}>
             <TextField
@@ -107,8 +143,17 @@ export const Create = () => {
               value={list.title}
               onChange={handleNewTitle}
               sx={{ width: "100%" }}
-              autoFocus
+              autoFocus={!list.title}
             />
+            {Object.keys(matchHistory).includes(list.title) &&
+            defaultSelectedList === selectedHistoryList ? (
+              <>
+                <Typography variant="body1" sx={{ color: "red", pt: 1 }}>
+                  Your title must be unique to your history listing.
+                </Typography>
+              </>
+            ) : null}
+
             <TextField
               id="newName"
               label="Add Name"
@@ -116,26 +161,38 @@ export const Create = () => {
               value={newName}
               onChange={handleNewName}
               sx={{ width: "100%", mt: 3 }}
-              autoFocus
+              autoFocus={!!list.title}
             />
-            {list.matches.length <= 1 ? (
+            <Button type="submit" sx={{ display: "none" }}>
+              Submit
+            </Button>
+
+            {newName !== "" ? (
               <>
-                <Typography variant="body1" style={{ color: "grey" }}>
-                  Add two names to see matches
+                <Typography variant="body1" sx={{ color: "#888", pt: 1 }}>
+                  Press Enter to add
+                </Typography>
+              </>
+            ) : null}
+
+            {list.matches.length === 1 ? (
+              <>
+                <Typography variant="body1" sx={{ color: "#888", pt: 1 }}>
+                  💡 Add two names to see matches
                 </Typography>
               </>
             ) : null}
           </form>
           <List>
             {list.names.map((name) => (
-              <ListItem>
+              <ListItem sx={{ p: 0 }}>
                 <Typography key={name} variant="body1">
                   {name}
                   <Button
                     onClick={() => handleDeleteName(name)}
                     style={{ color: "red" }}
                   >
-                    🗑
+                    ❌
                   </Button>
                 </Typography>
               </ListItem>
@@ -146,54 +203,79 @@ export const Create = () => {
           {/* // show matches */}
           {list.matches.length > 1 ? (
             <>
-              <Typography variant="h2">Matches</Typography>
+              <Typography variant="h4" component="h2">
+                Matches
+              </Typography>
               {list.matches.map(([name1, name2]) => (
                 <Typography key={name1} variant="body1">
                   {name1} - {name2}
                 </Typography>
               ))}
-              <Button
-                onClick={() => makeMatches(list.names)}
-                style={{ color: "blue" }}
-              >
-                Shuffle
+              <Button onClick={handleShuffle} style={{ color: "blue" }}>
+                Shuffle My List
               </Button>
             </>
           ) : null}
         </Box>
         <Box sx={{ pt: 4, flex: 1 }}>
+          <Typography variant="h4" component="h2">
+            History
+          </Typography>
           {/* // show history */}
-          {getMatchesHistory().length > 0 ? (
+          {Object.keys(matchHistory).length > 0 ? (
             <>
-              <Typography variant="h2">History</Typography>
-              {getMatchesHistory().map((item) => (
-                <Box
-                  key={item.id}
-                  sx={{ color: item.id === list.id ? "blue" : undefined }}
-                >
-                  <Typography variant="body1">
-                    {item.title} - {item.createdAt}
-                    <br />
-                    Last updated: {item.updatedAt}
-                  </Typography>
-                  <Button onClick={() => handleMatchSelect(item)}>
-                    Select
-                  </Button>
-                </Box>
-              ))}
+              {Object.keys(matchHistory).map((item) => {
+                const createdAt = new Intl.DateTimeFormat("en-US", {
+                  dateStyle: "short",
+                }).format(new Date(matchHistory[item].createdAt));
+                const updatedAt = new Intl.DateTimeFormat("en-US", {
+                  dateStyle: "short",
+                }).format(new Date(matchHistory[item].updatedAt));
+                return (
+                  <Box
+                    key={matchHistory[item].id}
+                    sx={{
+                      color:
+                        matchHistory[item].id === list.id ? "#333" : undefined,
+                      backgroundColor:
+                        matchHistory[item].id === list.id ? "#ccc" : undefined,
+                      border: "1px solid #ccc",
+                      borderRadius: "3px",
+                      p: 2,
+                      mt: 2,
+                      cursor: "pointer",
+                    }}
+                    onClick={() => handleMatchSelect(matchHistory[item])}
+                  >
+                    <Typography variant="body1">
+                      {matchHistory[item].title}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#777" }}>
+                      Created: {createdAt}
+                    </Typography>
+                    {createdAt !== updatedAt ? (
+                      <Typography variant="body2" sx={{ color: "#777" }}>
+                        Updated: {updatedAt}
+                      </Typography>
+                    ) : null}
+                  </Box>
+                );
+              })}
             </>
-          ) : null}
+          ) : (
+            <Typography>No Histrory. Go create your first list</Typography>
+          )}
         </Box>
       </Box>
     </Box>
   );
 };
 
-function getMatchesHistory(): Match[] {
-  return JSON.parse(window.localStorage.getItem("matchesHistory") || "[]");
+function getMatchesHistory(): Record<string, Match> {
+  return JSON.parse(window.localStorage.getItem("matchesHistory") || "{}");
 }
 
-function updateMatchesHistory(newMatchesHistory: Match[]) {
+function updateMatchesHistory(newMatchesHistory: Record<string, Match>) {
   window.localStorage.setItem(
     "matchesHistory",
     JSON.stringify(newMatchesHistory)
