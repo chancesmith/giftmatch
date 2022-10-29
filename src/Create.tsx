@@ -1,9 +1,19 @@
-import { List, ListItem } from "@mui/material";
+import {
+  Grid,
+  List,
+  ListItem,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+} from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import React from "react";
+import React, { useEffect } from "react";
 
 interface Match {
   id: string;
@@ -32,6 +42,10 @@ export const Create = () => {
     React.useState(defaultSelectedList);
   let matchHistory = getMatchesHistory();
 
+  useEffect(() => {
+    matchHistory = getMatchesHistory();
+  }, [list.title]);
+
   const handleNewName = (event: React.ChangeEvent<HTMLInputElement>) => {
     const name = event.target.value;
     setNewName(name);
@@ -39,10 +53,27 @@ export const Create = () => {
 
   const handleNewTitle = (event: React.ChangeEvent<HTMLInputElement>) => {
     const title = event.target.value;
-    setList({
+    const oldTitle = list.title;
+    const newList = {
       ...list,
+      id: title,
       title,
-    });
+    };
+    setList(newList);
+
+    // change the title of the key in localStorage
+    if (selectedHistoryList !== defaultSelectedList) {
+      const oldList = matchHistory[oldTitle];
+
+      delete matchHistory[oldTitle];
+
+      // update match history
+      const newMatchesHistory = {
+        ...matchHistory,
+        [title]: newList,
+      };
+      updateMatchesHistory(newMatchesHistory);
+    }
   };
 
   const makeMatches = (names: string[]) => {
@@ -89,7 +120,7 @@ export const Create = () => {
     // update match history
     const newMatchesHistory = {
       ...matchHistory,
-      [newMatch.title]: newMatch,
+      [newMatch.id]: newMatch,
     };
     updateMatchesHistory(newMatchesHistory);
   };
@@ -106,7 +137,7 @@ export const Create = () => {
   };
 
   const handleMatchSelect = (match: Match) => {
-    setSelectedHistoryList(match.title);
+    setSelectedHistoryList(match.id);
     setList(match);
   };
 
@@ -183,34 +214,60 @@ export const Create = () => {
               </>
             ) : null}
           </form>
-          <List>
-            {list.names.map((name) => (
-              <ListItem sx={{ p: 0 }}>
-                <Typography key={name} variant="body1">
-                  {name}
-                  <Button
-                    onClick={() => handleDeleteName(name)}
-                    style={{ color: "red" }}
+          <TableContainer component={Paper} sx={{ mt: 2 }}>
+            <Table sx={{ minWidth: 150 }} aria-label="simple table">
+              <TableBody>
+                {list.names.map((name) => (
+                  <TableRow
+                    key={name}
+                    sx={{
+                      "&:last-child td, &:last-child th": { border: 0 },
+                    }}
                   >
-                    ❌
-                  </Button>
-                </Typography>
-              </ListItem>
-            ))}
-          </List>
+                    <TableCell component="th" scope="row">
+                      {name}
+                    </TableCell>
+                    <TableCell align="right">
+                      <Button
+                        onClick={() => handleDeleteName(name)}
+                        style={{ color: "red", fontSize: 10 }}
+                      >
+                        ❌
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
-        <Box sx={{ pt: 4, flex: 1 }}>
+        <Box sx={{ pt: 4, mr: 4, flex: 1 }}>
           {/* // show matches */}
           {list.matches.length > 1 ? (
             <>
               <Typography variant="h4" component="h2">
                 Matches
               </Typography>
-              {list.matches.map(([name1, name2]) => (
-                <Typography key={name1} variant="body1">
-                  {name1} - {name2}
-                </Typography>
-              ))}
+
+              <TableContainer component={Paper} sx={{ mt: 2 }}>
+                <Table sx={{ minWidth: 150 }} aria-label="simple table">
+                  <TableBody>
+                    {list.matches.map(([name1, name2]) => (
+                      <TableRow
+                        key={name1}
+                        sx={{
+                          "&:last-child td, &:last-child th": { border: 0 },
+                        }}
+                      >
+                        <TableCell component="th" scope="row">
+                          {name1}
+                        </TableCell>
+                        <TableCell align="right">{name2}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
               <Button onClick={handleShuffle} style={{ color: "blue" }}>
                 Shuffle My List
               </Button>
